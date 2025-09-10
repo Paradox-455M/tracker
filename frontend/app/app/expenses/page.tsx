@@ -3,8 +3,12 @@ import { useEffect, useState } from "react";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import toast, { Toaster } from "react-hot-toast";
+import toast from "react-hot-toast";
 import EditExpenseModal from "@/components/EditExpenseModal";
+import Input from "@/components/ui/Input";
+import Button from "@/components/ui/Button";
+import Select from "@/components/ui/Select";
+import Badge from "@/components/ui/Badge";
 
 const schema = z.object({
   amount: z.string().transform((v) => Number(v)).refine((n) => !isNaN(n) && n > 0, "Amount must be > 0"),
@@ -19,7 +23,8 @@ type Expense = {
   description: string | null;
   amount: number;
   ai_category?: string | null;
-  final_category: string;
+  final_category?: string | null;
+  category?: string | null;
 };
 
 export default function ExpensesPage() {
@@ -73,30 +78,42 @@ export default function ExpensesPage() {
 
   return (
     <div>
-      <Toaster position="top-right" />
       <h1 className="text-2xl font-semibold">Expenses</h1>
       <form onSubmit={handleSubmit(onSubmit)} className="mt-4 grid md:grid-cols-[160px_1fr_160px_160px_120px] gap-2 items-end">
         <div>
           <label className="block text-xs text-gray-400 mb-1">Amount</label>
-          <input {...register("amount")} type="number" step="0.01" placeholder="0.00" className="w-full border border-white/10 bg-white/5 rounded p-2" />
+          <Input {...register("amount")} type="number" step="0.01" placeholder="0.00" />
           {errors.amount && <span className="text-xs text-red-400">{String(errors.amount.message)}</span>}
         </div>
         <div>
           <label className="block text-xs text-gray-400 mb-1">Description</label>
-          <input {...register("description")} className="w-full border border-white/10 bg-white/5 rounded p-2" placeholder="e.g., Zomato" />
+          <Input {...register("description")} placeholder="e.g., Zomato" />
           {errors.description && <span className="text-xs text-red-400">{String(errors.description.message)}</span>}
         </div>
         <div>
           <label className="block text-xs text-gray-400 mb-1">Date</label>
-          <input {...register("tx_date")} type="date" className="w-full border border-white/10 bg-white/5 rounded p-2" />
+          <Input {...register("tx_date")} type="date" />
         </div>
         <div>
           <label className="block text-xs text-gray-400 mb-1">Category (optional)</label>
-          <input {...register("category")} className="w-full border border-white/10 bg-white/5 rounded p-2" placeholder="Auto if blank" />
+          <Select {...register("category")}>
+            <option value="">Auto</option>
+            <option>Food & Dining</option>
+            <option>Groceries</option>
+            <option>Transportation</option>
+            <option>Shopping</option>
+            <option>Subscriptions</option>
+            <option>Utilities</option>
+            <option>Health</option>
+            <option>Entertainment</option>
+            <option>Travel</option>
+            <option>Rent</option>
+            <option>Other</option>
+          </Select>
         </div>
-        <button disabled={isSubmitting} className="h-10 rounded bg-lime-400 text-black px-4 disabled:opacity-50">
+        <Button disabled={isSubmitting}>
           {isSubmitting ? "Saving…" : "Add"}
-        </button>
+        </Button>
       </form>
 
       <div className="mt-6 rounded-xl border border-white/10 bg-white/5 overflow-hidden">
@@ -123,27 +140,28 @@ export default function ExpensesPage() {
                   <td colSpan={5} className="p-4 text-center text-gray-500">No expenses yet</td>
                 </tr>
               )}
-              {expenses && expenses.map((exp) => (
-                <tr key={exp.id} className="border-b border-white/5 hover:bg-white/5">
-                  <td className="px-4 py-2">{new Date(exp.tx_date).toLocaleDateString()}</td>
-                  <td className="px-4 py-2">{exp.description}</td>
-                  <td className="px-4 py-2">
-                    <span className="mr-2">{exp.final_category}</span>
-                    {exp.ai_category && exp.final_category === exp.ai_category ? (
-                      <span className="text-xs text-gray-500">(AI)</span>
-                    ) : (
-                      <span className="text-xs text-blue-400">(Edited)</span>
-                    )}
-                  </td>
-                  <td className="px-4 py-2 text-right">₹{Number(exp.amount).toFixed(2)}</td>
-                  <td className="px-4 py-2 text-right">
-                    <div className="inline-flex gap-3">
-                      <button onClick={() => setEditing(exp)} className="text-lime-300 hover:text-lime-200">Edit</button>
-                      <button onClick={() => deleteExpense(exp.id)} className="text-red-400 hover:text-red-300">Delete</button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
+              {expenses && expenses.map((exp) => {
+                const cat = (exp as any).category ?? exp.final_category ?? "Other";
+                return (
+                  <tr key={exp.id} className="border-b border-white/5 hover:bg-white/5 transition-colors">
+                    <td className="px-4 py-2">{new Date(exp.tx_date).toLocaleDateString()}</td>
+                    <td className="px-4 py-2">{exp.description}</td>
+                    <td className="px-4 py-2">
+                      <Badge>{cat}</Badge>
+                      {exp.ai_category ? (
+                        <span className="text-xs text-gray-500 ml-2">(AI)</span>
+                      ) : null}
+                    </td>
+                    <td className="px-4 py-2 text-right">₹{Number(exp.amount).toFixed(2)}</td>
+                    <td className="px-4 py-2 text-right">
+                      <div className="inline-flex gap-3">
+                        <button onClick={() => setEditing(exp)} className="text-lime-300 hover:text-lime-200">Edit</button>
+                        <button onClick={() => deleteExpense(exp.id)} className="text-red-400 hover:text-red-300">Delete</button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
@@ -151,7 +169,7 @@ export default function ExpensesPage() {
 
       {editing && (
         <EditExpenseModal
-          expense={{ id: editing.id, amount: editing.amount, description: editing.description, final_category: editing.final_category, tx_date: editing.tx_date }}
+          expense={{ id: editing.id, amount: editing.amount, description: editing.description, final_category: ((editing as any).category ?? editing.final_category ?? "Other") as string, tx_date: editing.tx_date }}
           onClose={() => setEditing(null)}
           onUpdated={loadExpenses}
         />

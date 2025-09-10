@@ -5,7 +5,9 @@
 - Add `http://localhost:3001/auth/callback` (or port shown in dev logs) as an Authorized Callback URL in Supabase and Google console.
 
 ## DB migrations
-- In Supabase SQL editor, run both:
+- **Automatic (Recommended)**: Use `npm run dev:auto` to start the frontend with automatic migrations
+- **Manual**: Run `npm run migrate` after starting the server
+- **Legacy**: In Supabase SQL editor, run both:
   - `backend/supabase/migrations/0001_init.sql`
   - `backend/supabase/migrations/0002_users.sql`
 

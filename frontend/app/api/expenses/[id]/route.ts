@@ -36,20 +36,23 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
 
   if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  let aiCategory: string | null = existing.ai_category ?? null;
-  if (typeof description === "string" && description !== existing.description) {
-    aiCategory = await suggestCategory(description);
+  let updatedCategory: string | undefined = undefined;
+  if (typeof category === "string" && category.trim()) {
+    updatedCategory = String(category).trim();
+  } else if (typeof description === "string" && description !== existing.description) {
+    try {
+      updatedCategory = await suggestCategory(description);
+    } catch {
+      updatedCategory = existing.category;
+    }
   }
-  const finalCategory: string = (category && String(category).trim()) || aiCategory || existing.final_category || existing.category;
 
   const { data, error } = await supabase
     .from("expenses")
     .update({
       amount: amount ?? existing.amount,
       description: description ?? existing.description,
-      ai_category: aiCategory,
-      final_category: finalCategory,
-      category: finalCategory,
+      category: updatedCategory ?? existing.category,
       tx_date: tx_date ? new Date(tx_date).toISOString() : existing.tx_date,
     })
     .eq("id", id)

@@ -1,6 +1,8 @@
 "use client";
 import { useEffect, useState } from "react";
-import toast, { Toaster } from "react-hot-toast";
+import toast from "react-hot-toast";
+import Input from "@/components/ui/Input";
+import Button from "@/components/ui/Button";
 
 type Budget = {
   id: string;
@@ -47,26 +49,25 @@ export default function BudgetsPage() {
 
   return (
     <div>
-      <Toaster position="top-right" />
       <h1 className="text-2xl font-semibold">Budgets</h1>
       <form onSubmit={addBudget} className="mt-4 grid md:grid-cols-[1fr_160px_120px_120px_120px] gap-2 items-end">
         <div>
           <label className="block text-xs text-gray-400 mb-1">Category</label>
-          <input value={form.category} onChange={(e)=>setForm(f=>({...f, category: e.target.value}))} className="w-full border border-white/10 bg-white/5 rounded p-2" placeholder="Food & Dining" />
+          <Input value={form.category} onChange={(e)=>setForm(f=>({...f, category: e.target.value}))} placeholder="Food & Dining" />
         </div>
         <div>
           <label className="block text-xs text-gray-400 mb-1">Amount</label>
-          <input value={form.amount} onChange={(e)=>setForm(f=>({...f, amount: e.target.value}))} type="number" step="0.01" className="w-full border border-white/10 bg-white/5 rounded p-2" />
+          <Input value={form.amount} onChange={(e)=>setForm(f=>({...f, amount: e.target.value}))} type="number" step="0.01" />
         </div>
         <div>
           <label className="block text-xs text-gray-400 mb-1">Month</label>
-          <input value={form.month} onChange={(e)=>setForm(f=>({...f, month: e.target.value}))} type="number" min={1} max={12} className="w-full border border-white/10 bg-white/5 rounded p-2" />
+          <Input value={form.month} onChange={(e)=>setForm(f=>({...f, month: e.target.value}))} type="number" min={1} max={12} />
         </div>
         <div>
           <label className="block text-xs text-gray-400 mb-1">Year</label>
-          <input value={form.year} onChange={(e)=>setForm(f=>({...f, year: e.target.value}))} type="number" min={2000} max={2999} className="w-full border border-white/10 bg-white/5 rounded p-2" />
+          <Input value={form.year} onChange={(e)=>setForm(f=>({...f, year: e.target.value}))} type="number" min={2000} max={2999} />
         </div>
-        <button className="h-10 rounded bg-lime-400 text-black px-4">Add</button>
+        <Button>Add</Button>
       </form>
 
       <div className="mt-6 rounded-xl border border-white/10 bg-white/5 overflow-hidden">
@@ -86,16 +87,16 @@ export default function BudgetsPage() {
               {budgets.map(b => (
                 <tr key={b.id} className="border-b border-white/5">
                   <td className="px-4 py-2">
-                    <input defaultValue={b.category} onBlur={(e)=>updateBudget(b.id,{ category: e.target.value })} className="border border-white/10 bg-white/5 rounded p-1" />
+                    <Input defaultValue={b.category} onBlur={(e)=>updateBudget(b.id,{ category: e.target.value })} size="sm" />
                   </td>
                   <td className="px-4 py-2">
-                    <input type="number" step="0.01" defaultValue={String(b.limit_amount)} onBlur={(e)=>updateBudget(b.id,{ limit_amount: Number(e.target.value) })} className="border border-white/10 bg-white/5 rounded p-1 w-32" />
+                    <Input type="number" step="0.01" defaultValue={String(b.limit_amount)} onBlur={(e)=>updateBudget(b.id,{ limit_amount: Number(e.target.value) })} size="sm" className="w-32" />
                   </td>
                   <td className="px-4 py-2">
-                    <input type="number" min={1} max={12} defaultValue={b.period_month} onBlur={(e)=>updateBudget(b.id,{ period_month: Number(e.target.value) })} className="border border-white/10 bg-white/5 rounded p-1 w-20" />
+                    <Input type="number" min={1} max={12} defaultValue={b.period_month} onBlur={(e)=>updateBudget(b.id,{ period_month: Number(e.target.value) })} size="sm" className="w-20" />
                   </td>
                   <td className="px-4 py-2">
-                    <input type="number" min={2000} max={2999} defaultValue={b.period_year} onBlur={(e)=>updateBudget(b.id,{ period_year: Number(e.target.value) })} className="border border-white/10 bg-white/5 rounded p-1 w-24" />
+                    <Input type="number" min={2000} max={2999} defaultValue={b.period_year} onBlur={(e)=>updateBudget(b.id,{ period_year: Number(e.target.value) })} size="sm" className="w-24" />
                   </td>
                   <td className="px-4 py-2 text-right"><button onClick={()=>deleteBudget(b.id)} className="text-red-400 hover:text-red-300">Delete</button></td>
                 </tr>

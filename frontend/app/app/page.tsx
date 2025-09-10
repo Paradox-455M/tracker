@@ -3,6 +3,8 @@ import { createClient } from "@/lib/supabase/server";
 import CategoryPie from "@/components/CategoryPie";
 import InsightsCard from "@/components/InsightsCard";
 import BudgetAlerts from "@/components/BudgetAlerts";
+import DashboardCard from "@/components/DashboardCard";
+import Sparkline from "@/components/Sparkline";
 import { checkAndInsertBudgetAlerts } from "@/lib/alerts/server";
 
 export default async function DashboardPage() {
@@ -52,32 +54,30 @@ export default async function DashboardPage() {
       </div>
 
       <div className="grid md:grid-cols-3 gap-4 mt-6">
-        <div className="rounded-xl border border-white/10 bg-white/5 p-4">
-          <div className="text-xs text-gray-400">This month</div>
-          <div className="text-2xl font-bold mt-1">₹{(chartData.reduce((a, c) => a + c.value, 0)).toFixed(2)}</div>
-          <div className="text-xs text-gray-500 mt-2">Total spend</div>
-        </div>
-        <div className="rounded-xl border border-white/10 bg-white/5 p-4">
-          <div className="text-xs text-gray-400">Top category</div>
-          <div className="text-2xl font-bold mt-1">{chartData.sort((a,b)=>b.value-a.value)[0]?.name || "—"}</div>
-          <div className="text-xs text-gray-500 mt-2">Highest share</div>
-        </div>
-        <div className="rounded-xl border border-white/10 bg-white/5 p-4">
-          <div className="text-xs text-gray-400">Budgets</div>
-          <div className="text-2xl font-bold mt-1">2 nearing limit</div>
-          <div className="text-xs text-gray-500 mt-2">Set alerts to stay on track</div>
-        </div>
+        <DashboardCard title="This month">
+          <div className="text-3xl font-bold mt-1">₹{(chartData.reduce((a, c) => a + c.value, 0)).toFixed(2)}</div>
+          <Sparkline data={[12,18,10,22,19,28,24]} />
+          <div className="text-xs text-[var(--text-muted)] mt-1">Total spend</div>
+        </DashboardCard>
+        <DashboardCard title="Top category">
+          <div className="text-3xl font-bold mt-1">{chartData.sort((a,b)=>b.value-a.value)[0]?.name || "—"}</div>
+          <Sparkline data={[8,12,9,14,12,16,17]} color="#00FFC6" />
+          <div className="text-xs text-[var(--text-muted)] mt-1">Highest share</div>
+        </DashboardCard>
+        <DashboardCard title="Budgets">
+          <div className="text-3xl font-bold mt-1">2 nearing limit</div>
+          <Sparkline data={[5,7,6,9,10,12,14]} color="#FFB347" />
+          <div className="text-xs text-[var(--text-muted)] mt-1">Set alerts to stay on track</div>
+        </DashboardCard>
       </div>
 
       <div className="grid md:grid-cols-2 gap-4 mt-4">
-        <div className="rounded-xl border border-white/10 bg-white/5 p-4 h-72">
-          <div className="text-sm text-gray-400 mb-2">Category breakdown</div>
-          <CategoryPie data={chartData} />
-        </div>
-        <div className="rounded-xl border border-white/10 bg-white/5 p-4 h-72">
-          <div className="text-sm text-gray-400 mb-2">Weekly insights</div>
-          <InsightsCard />
-        </div>
+        <DashboardCard title="Category breakdown">
+          <div className="h-72"><CategoryPie data={chartData} /></div>
+        </DashboardCard>
+        <DashboardCard title="Weekly insights">
+          <div className="h-72"><InsightsCard /></div>
+        </DashboardCard>
       </div>
     </div>
   );

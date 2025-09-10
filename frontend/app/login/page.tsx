@@ -1,6 +1,8 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Input from "@/components/ui/Input";
+import Button from "@/components/ui/Button";
 import { createBrowserSupabase } from "@/lib/supabase/client";
 
 export const dynamic = "force-dynamic";
@@ -60,26 +62,15 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center p-6">
-      <div className="w-full max-w-md space-y-4">
-        <h1 className="text-2xl font-semibold">Welcome</h1>
-        <p className="text-sm text-gray-500">Sign in or create an account</p>
-        <form onSubmit={signInWithEmail} className="space-y-2">
-          <input
-            className="w-full border rounded p-2"
-            placeholder="you@example.com"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            type="email"
-            required
-          />
-          <button className="w-full border rounded p-2" type="submit">
-            Continue with Email
-          </button>
+      <div className="w-full max-w-md space-y-4 rounded-2xl glass p-6">
+        <h1 className="text-3xl font-bold">Welcome</h1>
+        <p className="text-sm text-[var(--text-secondary)]">Sign in or create an account</p>
+        <form onSubmit={signInWithEmail} className="space-y-3">
+          <Input placeholder="you@example.com" value={email} onChange={(e)=>setEmail(e.target.value)} type="email" required />
+          <Button className="w-full" type="submit">Continue with Email</Button>
         </form>
-        <button onClick={signInWithGoogle} className="w-full border rounded p-2">
-          Continue with Google
-        </button>
-        {status && <p className="text-xs text-gray-500">{status}</p>}
+        <Button variant="outline" className="w-full" onClick={signInWithGoogle}>Continue with Google</Button>
+        {status && <p className="text-xs text-[var(--text-muted)]">{status}</p>}
       </div>
     </div>
   );

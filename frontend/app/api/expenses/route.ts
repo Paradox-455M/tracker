@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { suggestCategory } from "@/lib/ai/categorize";
+
+import { suggestCategory, fallbackCategoryFromKeywords } from "@/lib/ai/categorize";
 
 export async function GET() {
   const supabase = await createClient();
@@ -15,7 +16,14 @@ export async function GET() {
     .limit(20);
 
   if (error) return NextResponse.json({ error: error.message }, { status: 400 });
-  return NextResponse.json({ expenses: data });
+
+  const normalized = (data || []).map((e: any) => ({
+    ...e,
+    final_category: e.final_category ?? e.category,
+    ai_category: e.ai_category ?? null,
+  }));
+
+  return NextResponse.json({ expenses: normalized });
 }
 
 export async function POST(req: Request) {
@@ -30,19 +38,41 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Invalid amount" }, { status: 400 });
   }
 
-  const aiCategory = await suggestCategory(description || "");
-  const finalCategory = (incomingCategory && String(incomingCategory).trim())
-    ? String(incomingCategory).trim()
-    : aiCategory;
+  let finalCategory: string;
+  if (incomingCategory && String(incomingCategory).trim()) {
+    finalCategory = String(incomingCategory).trim();
+  } else {
+    const desc = (description || "").toLowerCase();
 
-  const { data, error } = await supabase
+    // Hard-stop mapping for common food strings
+    if (/(\bsweet\b|\bsweets\b|\bzomato\b|\bswiggy\b|\bice\s?cream\b|\brestaurant\b|\bpizza\b|\bburger\b|\bcafe\b)/.test(desc)) {
+      finalCategory = "Food & Dining";
+    } else {
+      // Use exported local mapping first
+      const local = desc ? fallbackCategoryFromKeywords(desc) : null;
+      if (local) {
+        finalCategory = local;
+      } else {
+        try {
+          finalCategory = await suggestCategory(description || "");
+        } catch {
+          finalCategory = "Other";
+        }
+      }
+    }
+
+    // Debug: log classification path in dev
+    if (process.env.NODE_ENV !== "production") {
+      console.log("[POST /api/expenses] desc=", description, "=> category=", finalCategory);
+    }
+  }
+
+  const { data: inserted, error } = await supabase
     .from("expenses")
     .insert({
       user_id: user.id,
       amount: Number(amount),
       description: description || null,
-      ai_category: aiCategory,
-      final_category: finalCategory,
       category: finalCategory,
       tx_date: tx_date ? new Date(tx_date).toISOString() : new Date().toISOString(),
     })
@@ -50,5 +80,7 @@ export async function POST(req: Request) {
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 400 });
-  return NextResponse.json({ expense: data });
+
+  const normalized = inserted ? { ...inserted, final_category: inserted.final_category ?? inserted.category, ai_category: inserted.ai_category ?? null } : null;
+  return NextResponse.json({ expense: normalized });
 }

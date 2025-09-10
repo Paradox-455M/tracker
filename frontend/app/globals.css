@@ -1,20 +1,36 @@
 @import "tailwindcss";
 
+/* Design tokens */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #0E0E0E;
+  --foreground: #FFFFFF;
+  --bg-secondary: #1A1A1A;
+  --bg-card: rgba(30,30,30,0.8);
+
+  --primary: #7CFC00; /* neon green */
+  --primary-hover: #1DB954; /* deep finance green */
+  --primary-light: #B3FF40;
+  --secondary: #1DB954;
+  --accent: #14b8a6; /* teal */
+
+  --text-secondary: #B0B0B0;
+  --text-muted: #6C6C6C;
+
+  --chart-green: #9EFF00;
+  --chart-teal: #00FFC6;
+  --chart-orange: #FFB347;
+  --chart-pink: #FF5F7E;
+  --chart-blue: #4BA3FF;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-light: var(--primary-light);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-muted: var(--text-muted);
 }
 
 body {
@@ -24,6 +40,18 @@ body {
     Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
 }
 
+/* Glassmorphism utility */
+.glass {
+  background: var(--bg-card);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255,255,255,0.08);
+}
+
 .shadow-card {
   box-shadow: 0 1px 0 0 rgba(255,255,255,0.05) inset, 0 20px 60px rgba(0,0,0,0.5);
+}
+
+.shadow-glow {
+  box-shadow: 0 0 20px rgba(158,255,0,0.4);
 }
