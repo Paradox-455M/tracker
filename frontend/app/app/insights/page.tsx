@@ -1,7 +1,9 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import WeeklySummary from "@/components/WeeklySummary";
-import AIChatAssistant from "@/components/AIChatAssistant";
+import dynamic from "next/dynamic";
+import { Suspense } from "react";
+const WeeklySummary = dynamic(() => import("@/components/WeeklySummary"));
+const AIChatAssistant = dynamic(() => import("@/components/AIChatAssistant"));
 import ClientSummaryTrigger from "./ClientSummaryTrigger";
 import SummaryOverlay from "./SummaryOverlay";
 
@@ -23,8 +25,12 @@ export default async function InsightsPage() {
       </div>
       <SummaryOverlay />
       <div className="mt-4 grid md:grid-cols-2 gap-4">
-        <WeeklySummary />
-        <AIChatAssistant />
+        <Suspense fallback={<div className="rounded-2xl glass p-4 h-80 shadow-card animate-pulse" />}> 
+          <WeeklySummary />
+        </Suspense>
+        <Suspense fallback={<div className="rounded-2xl glass p-4 h-80 shadow-card animate-pulse" />}> 
+          <AIChatAssistant />
+        </Suspense>
       </div>
     </div>
   );

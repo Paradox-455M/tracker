@@ -19,6 +19,10 @@ export async function generateWeeklyInsights(summary: unknown) {
 You are an AI financial advisor. Based on this weekly expense summary,
 provide 3-4 concise insights. Tone: friendly, clear, helpful.
 
+Currency rules:
+- Always use the Indian Rupee symbol (₹) when mentioning amounts. Do not use $.
+- Use locale-style digit grouping (e.g., 12,34,567 is optional) but the symbol must be ₹.
+
 Weekly Summary:
 ${JSON.stringify(summary, null, 2)}
 

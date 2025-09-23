@@ -1,27 +1,25 @@
-"use client";
-import { useEffect, useState } from "react";
+import { createClient } from "@/lib/supabase/server";
+import { headers, cookies } from "next/headers";
 
-export default function InsightsCard() {
-  const [text, setText] = useState<string>("");
-  const [loading, setLoading] = useState<boolean>(true);
+export default async function InsightsCard() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return null;
 
-  useEffect(() => {
-    (async () => {
-      try {
-        const res = await fetch("/api/insights/weekly");
-        const data = await res.json();
-        setText(data.text || "No insights yet");
-      } catch {
-        setText("Unable to load insights");
-      } finally {
-        setLoading(false);
-      }
-    })();
-  }, []);
+  // Build absolute URL and forward cookies so the API recognizes the user
+  const h = await headers();
+  const proto = h.get("x-forwarded-proto") || "http";
+  const host = h.get("host") || "localhost:3000";
+  const base = `${proto}://${host}`;
+  const cookieHeader = (await cookies()).toString();
 
-  if (loading) return <div className="text-sm text-gray-500">Generating…</div>;
+  const res = await fetch(`${base}/api/insights/weekly`, { cache: "no-store", headers: { cookie: cookieHeader } });
+  
+  const data = await res.json();
+  const text = String(data.text || "No insights yet").replace(/\$/g, "₹").replace(/\$(?=\d)/g, "₹");
+
   return (
-    <div className="text-sm whitespace-pre-wrap leading-6 text-gray-200">
+    <div className="text-sm whitespace-pre-wrap leading-6 text-gray-200" >
       {text}
     </div>
   );

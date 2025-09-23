@@ -11,19 +11,19 @@ export default function SummaryOverlay() {
       setText("");
       setOpen(true);
     }
-    function onChunk(e: any) {
+    function onChunk(e: CustomEvent<string>) {
       setText((prev) => prev + (e.detail || ""));
     }
     function onEnd() {
       // keep open until user closes or runs again
     }
-    window.addEventListener("summary:start", onStart);
-    window.addEventListener("summary:chunk", onChunk as any);
-    window.addEventListener("summary:end", onEnd);
+    window.addEventListener("summary:start", onStart as EventListener);
+    window.addEventListener("summary:chunk", onChunk as unknown as EventListener);
+    window.addEventListener("summary:end", onEnd as EventListener);
     return () => {
-      window.removeEventListener("summary:start", onStart);
-      window.removeEventListener("summary:chunk", onChunk as any);
-      window.removeEventListener("summary:end", onEnd);
+      window.removeEventListener("summary:start", onStart as EventListener);
+      window.removeEventListener("summary:chunk", onChunk as unknown as EventListener);
+      window.removeEventListener("summary:end", onEnd as EventListener);
     };
   }, []);
 

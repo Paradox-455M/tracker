@@ -9,7 +9,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
       <main className="p-6">
         <div className="max-w-6xl mx-auto">
           <RouteTransition>
-            <div className="rounded-2xl glass p-6 shadow-card">
+            <div className="rounded-2xl p-6 " >
               {children}
             </div>
           </RouteTransition>

@@ -1,10 +1,11 @@
 "use client";
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip, Legend } from "recharts";
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 
 export type CategoryDatum = { name: string; value: number };
 
 export default function CategoryPie({ data }: { data: CategoryDatum[] }) {
+  const prefersReduced = useReducedMotion();
   const colors = [
     "#9EFF00",
     "#00FFC6",
@@ -18,10 +19,17 @@ export default function CategoryPie({ data }: { data: CategoryDatum[] }) {
   }
 
   return (
-    <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.4 }} className="w-full h-full">
+    <motion.div initial={prefersReduced ? false : { opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} transition={prefersReduced ? { duration: 0 } : { duration: 0.4 }} className="w-full h-full">
       <ResponsiveContainer width="100%" height="100%">
         <PieChart>
-          <Pie data={data} dataKey="value" nameKey="name" outerRadius={90}>
+          <Pie
+            data={data}
+            dataKey="value"
+            nameKey="name"
+            outerRadius={90}
+            isAnimationActive={!prefersReduced}
+            animationDuration={prefersReduced ? 0 : 400}
+          >
             {data.map((_, i) => (
               <Cell key={i} fill={colors[i % colors.length]} />
             ))}

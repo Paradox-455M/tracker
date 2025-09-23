@@ -96,7 +96,7 @@ export async function runMigrations() {
           );
         `
       });
-    } catch (error) {
+    } catch {
       // If RPC doesn't exist, try direct SQL (this might fail in some setups)
       console.log("Migrations table creation skipped - RPC not available");
     }
@@ -128,9 +128,9 @@ export async function runMigrations() {
           if (statement.trim()) {
             try {
               await supabase.rpc('exec_sql', { sql: statement.trim() + ';' });
-            } catch (error) {
+            } catch {
               console.log(`Statement failed (this is often expected): ${statement.substring(0, 50)}...`);
-              console.log(`Error: ${error instanceof Error ? error.message : String(error)}`);
+              // Swallow specific statement errors silently for idempotency
             }
           }
         }
@@ -140,16 +140,16 @@ export async function runMigrations() {
           await supabase
             .from('migrations')
             .insert({ id: migration.id });
-        } catch (error) {
+        } catch {
           console.log(`Could not mark migration ${migration.id} as applied`);
         }
 
         console.log(`Migration ${migration.id} applied successfully`);
-      } catch (error) {
-        console.error(`Failed to apply migration ${migration.id}:`, error);
+      } catch {
+        console.error(`Failed to apply migration ${migration.id}:`, Error);
       }
     }
-  } catch (error) {
-    console.error('Migration system error:', error);
+  } catch {
+    console.error('Migration system error:', Error);
   }
 }

@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 
 export async function POST(req: NextRequest) {
   try {
-    const { message, mode } = await req.json();
+    const { message, mode } = (await req.json()) as { message?: string; mode?: "weekly_summary" | "monthly_summary" | string };
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -15,9 +15,11 @@ export async function POST(req: NextRequest) {
       .select("id, category, limit_amount")
       .eq("user_id", user.id);
 
-    let expenses: any[] = [];
-    let thisPeriod: any[] | null = null;
-    let lastPeriod: any[] | null = null;
+    type ExpenseLite = { id: string; amount: number | string; category?: string | null; description?: string | null; tx_date: string };
+    type BudgetLite = { id: string; category: string; limit_amount: number };
+    let expenses: ExpenseLite[] = [];
+    let thisPeriod: ExpenseLite[] | null = null;
+    let lastPeriod: ExpenseLite[] | null = null;
 
     const now = new Date();
     const startOfWeek = (d: Date) => { const n = new Date(d); const day = n.getDay(); const diff = (day === 0 ? -6 : 1) - day; n.setDate(n.getDate() + diff); n.setHours(0,0,0,0); return n; };
@@ -73,10 +75,10 @@ RULES:
 - If data is missing, reply: "I don’t have enough data to answer that."
 `;
 
-    const context: any = { budgets: budgets || [] };
+    const context: { budgets: BudgetLite[] | null; thisPeriod?: ExpenseLite[]; lastPeriod?: ExpenseLite[]; expenses?: ExpenseLite[] } = { budgets: (budgets as BudgetLite[] | null) || [] };
     if (mode === "weekly_summary" || mode === "monthly_summary") {
-      context.thisPeriod = thisPeriod;
-      context.lastPeriod = lastPeriod;
+      if (thisPeriod) context.thisPeriod = thisPeriod;
+      if (lastPeriod) context.lastPeriod = lastPeriod;
     } else {
       context.expenses = expenses || [];
     }

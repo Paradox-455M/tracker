@@ -17,7 +17,8 @@ export async function GET() {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 400 });
 
-  const normalized = (data || []).map((e: any) => ({
+  type ExpenseRow = { id: string; amount: number | string; category?: string | null; final_category?: string | null; ai_category?: string | null; description?: string | null; tx_date: string };
+  const normalized = (data || []).map((e: ExpenseRow) => ({
     ...e,
     final_category: e.final_category ?? e.category,
     ai_category: e.ai_category ?? null,

@@ -1,8 +1,15 @@
 "use client";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { createBrowserSupabase } from "@/lib/supabase/client";
 
 export function useRealtimeAlerts(userId: string | null, onNewAlert: (alert: any) => void) {
+  const callbackRef = useRef(onNewAlert);
+
+  // Keep latest callback without changing subscription
+  useEffect(() => {
+    callbackRef.current = onNewAlert;
+  }, [onNewAlert]);
+
   useEffect(() => {
     if (!userId) return;
     const supabase = createBrowserSupabase();
@@ -12,7 +19,7 @@ export function useRealtimeAlerts(userId: string | null, onNewAlert: (alert: any
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "alerts", filter: `user_id=eq.${userId}` },
         (payload) => {
-          onNewAlert((payload as any).new);
+          callbackRef.current?.((payload as any).new);
         }
       )
       .subscribe();
@@ -20,7 +27,8 @@ export function useRealtimeAlerts(userId: string | null, onNewAlert: (alert: any
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [userId, onNewAlert]);
+    // Only re-subscribe when userId changes.
+  }, [userId]);
 }
 
 

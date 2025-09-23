@@ -25,7 +25,7 @@ export function computeBudgetAlerts(budgets: BudgetRow[], totalsByCategory: Reco
 }
 
 // Server-side helper: insert alert only once per threshold per period
-export async function upsertBudgetAlertsServer(userId: string, alerts: Alert[], periodKey: string) {
+export async function upsertBudgetAlertsServer(): Promise<void> {
   // no-op placeholder: In MVP we keep inline alerts only; extended version could insert into alerts table here.
 }
 

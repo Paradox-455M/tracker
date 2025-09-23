@@ -37,24 +37,34 @@ export default function EditExpenseModal({ expense, onClose, onUpdated }: { expe
 
   async function onSubmit(values: z.infer<typeof schema>) {
     try {
-      const res = await fetch(`/api/expenses/${expense.id}`, {
-        method: "PATCH",
+      const isCreate = expense.id === "new";
+      const url = isCreate ? "/api/expenses" : `/api/expenses/${expense.id}`;
+      const method = isCreate ? "POST" : "PATCH";
+      const payload = {
+        amount: values.amount,
+        description: values.description,
+        category: values.category,
+        tx_date: values.tx_date,
+      };
+
+      const res = await fetch(url, {
+        method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(values),
+        body: JSON.stringify(payload),
       });
-      if (!res.ok) throw new Error("Failed to update");
-      toast.success("Expense updated!");
+      if (!res.ok) throw new Error(isCreate ? "Failed to create" : "Failed to update");
+      toast.success(isCreate ? "Expense added!" : "Expense updated!");
       onUpdated();
       onClose();
-    } catch (err) {
-      toast.error("Error updating expense");
+    } catch {
+      toast.error("Error saving expense");
     }
   }
 
   return (
-    <div className="fixed inset-0 flex items-center justify-center bg-black/40 z-50">
+    <div className="fixed inset-0 flex items-center justify-center bg-black/70 backdrop-blur-sm z-50" aria-modal="true" role="dialog">
       <div className="relative rounded-2xl glass p-6 w-[480px] text-white shadow-card">
-        <h2 className="text-xl font-semibold mb-4">Edit Expense</h2>
+        <h2 className="text-xl font-semibold mb-4">{expense.id === "new" ? "Add Expense" : "Edit Expense"}</h2>
         <button type="button" onClick={onClose} className="absolute top-3 right-3 p-2 rounded-full hover:bg-white/10" aria-label="Close">
           <X size={16} />
         </button>

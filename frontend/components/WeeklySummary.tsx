@@ -2,10 +2,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip } from "recharts";
+import { useReducedMotion } from "framer-motion";
 
 type Row = { category: string; amount: number };
 
 export default function WeeklySummary() {
+  const prefersReduced = useReducedMotion();
   const [data, setData] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -14,11 +16,13 @@ export default function WeeklySummary() {
     (async () => {
       try {
         setLoading(true);
-        const res = await fetch("/api/expenses/summary", { cache: "no-store" });
+        // Use weekly insights API; transform totals map → rows
+        const res = await fetch("/api/insights/weekly", { cache: "no-store" });
         const json = await res.json();
         if (!active) return;
-        const week = json?.weekly || [];
-        setData(week);
+        const currentTotals = (json?.summary?.current || {}) as Record<string, number | string>;
+        const rows: Row[] = Object.entries(currentTotals).map(([category, amount]) => ({ category, amount: Number(amount) || 0 }));
+        setData(rows);
       } finally {
         if (active) setLoading(false);
       }
@@ -26,12 +30,31 @@ export default function WeeklySummary() {
     return () => { active = false; };
   }, []);
 
+  const [budgets, setBudgets] = useState<Array<{ category: string; limit_amount: number }> | null>(null);
+
+  useEffect(() => {
+    let act = true;
+    (async () => {
+      const res = await fetch("/api/budgets", { cache: "no-store" });
+      const json: { budgets?: Array<{ category: string; limit_amount: number; period_month: number; period_year: number }> } = await res.json();
+      if (!act) return;
+      const curMonth = new Date().getMonth() + 1;
+      const curYear = new Date().getFullYear();
+      const filtered = (json?.budgets || []).filter((b) => b.period_month === curMonth && b.period_year === curYear);
+      setBudgets(filtered);
+    })();
+    return () => { act = false; };
+  }, []);
+
   const total = useMemo(() => data.reduce((a, c) => a + (Number(c.amount) || 0), 0), [data]);
   const top = useMemo(() => data.slice().sort((a,b)=> (b.amount||0)-(a.amount||0))[0]?.category || "—", [data]);
   const remainingPct = useMemo(() => {
-    const monthlyBudget = 10000; // placeholder; future: fetch from budgets
-    return Math.max(0, Math.min(100, Math.round(((monthlyBudget - total) / monthlyBudget) * 100)));
-  }, [total]);
+    if (!budgets || budgets.length === 0) return 100;
+    const budgetTotal = budgets.reduce((a, b) => a + (Number(b.limit_amount) || 0), 0);
+    if (budgetTotal <= 0) return 100;
+    const pct = Math.round(((budgetTotal - total) / budgetTotal) * 100);
+    return Math.max(0, Math.min(100, pct));
+  }, [budgets, total]);
 
   return (
     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }} className="rounded-2xl glass p-4 h-80 shadow-card">
@@ -51,7 +74,7 @@ export default function WeeklySummary() {
                 <XAxis dataKey="category" stroke="#6C6C6C" tick={{ fill: "#B0B0B0", fontSize: 12 }} />
                 <YAxis stroke="#6C6C6C" tick={{ fill: "#B0B0B0", fontSize: 12 }} />
                 <Tooltip cursor={{ fill: "rgba(255,255,255,0.05)" }} contentStyle={{ background: "rgba(30,30,30,0.9)", border: "1px solid rgba(255,255,255,0.1)", color: "#fff" }} />
-                <Bar dataKey="amount" fill="#9EFF00" radius={[6,6,0,0]} />
+                <Bar dataKey="amount" fill="#9EFF00" radius={[6,6,0,0]} isAnimationActive={!prefersReduced} animationDuration={prefersReduced ? 0 : 400} />
               </BarChart>
             </ResponsiveContainer>
           )}

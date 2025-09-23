@@ -29,7 +29,7 @@ export default function AIChatAssistant() {
     try {
       const res = await fetch("/api/ai/chat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ message: text }) });
       if (!res.body) {
-        const fallback = await res.json().catch(() => ({} as any));
+        const fallback = await res.json().catch(() => ({} as Record<string, unknown>));
         const reply = (fallback && fallback.reply) || "I don’t have enough data to answer that.";
         setMessages((prev) => [...prev, { id: crypto.randomUUID(), role: "assistant", content: reply }]);
         return;
@@ -38,12 +38,30 @@ export default function AIChatAssistant() {
       const decoder = new TextDecoder();
       const assistantId = crypto.randomUUID();
       setMessages((prev) => [...prev, { id: assistantId, role: "assistant", content: "" }]);
+
+      let buffered = "";
+      let lastFlush = performance.now();
+      const flushEveryMs = 48; // throttle to ~20fps for smoother UI
+
+      async function flush(force = false) {
+        const now = performance.now();
+        if (!force && now - lastFlush < flushEveryMs) return;
+        if (buffered.length === 0) return;
+        const toAppend = buffered;
+        buffered = "";
+        lastFlush = now;
+        // Single state update to avoid re-render per chunk
+        setMessages((prev) => prev.map((m) => (m.id === assistantId ? { ...m, content: m.content + toAppend } : m)));
+      }
+
       while (true) {
         const { value, done } = await reader.read();
         if (done) break;
         const chunk = decoder.decode(value);
-        setMessages((prev) => prev.map((m) => (m.id === assistantId ? { ...m, content: m.content + chunk } : m)));
+        buffered += chunk;
+        await flush();
       }
+      await flush(true);
     } finally {
       setLoading(false);
     }

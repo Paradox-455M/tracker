@@ -9,6 +9,7 @@
     "start": "next start",
     "start:auto": "node scripts/start-with-migrations.js",
     "lint": "eslint",
+    "analyze": "ANALYZE=true next build",
     "migrate": "node scripts/run-migrations.js"
   },
   "dependencies": {
@@ -30,6 +31,7 @@
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
+    "@next/bundle-analyzer": "^15.5.3",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",

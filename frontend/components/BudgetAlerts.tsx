@@ -1,34 +1,39 @@
-"use client";
-import { useEffect, useState } from "react";
-import { computeBudgetAlerts, type BudgetRow, type Alert } from "@/lib/budgets";
+import { computeBudgetAlerts, type BudgetRow } from "@/lib/budgets";
+import { createClient } from "@/lib/supabase/server";
 
-export default function BudgetAlerts() {
-  const [alerts, setAlerts] = useState<Alert[] | null>(null);
+export default async function BudgetAlerts() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return null;
 
-  useEffect(() => {
-    (async () => {
-      try {
-        const [budgetsRes, totalsRes] = await Promise.all([
-          fetch("/api/budgets"),
-          fetch("/api/expenses/summary"),
-        ]);
-        const budgetsJson = await budgetsRes.json();
-        const totalsJson = await totalsRes.json();
-        const computed = computeBudgetAlerts(
-          (budgetsJson.budgets || []) as BudgetRow[],
-          (totalsJson.totals || {}) as Record<string, number>,
-          totalsJson.month,
-          totalsJson.year
-        );
-        setAlerts(computed);
-      } catch {
-        setAlerts([]);
-      }
-    })();
-  }, []);
+  const now = new Date();
+  const month = now.getMonth() + 1;
+  const year = now.getFullYear();
+  const start = new Date(year, month - 1, 1).toISOString();
+  const next = new Date(year, month, 1).toISOString();
 
-  if (!alerts) return <div className="text-sm text-gray-500">Loading alerts…</div>;
-  if (alerts.length === 0) return null;
+  const [{ data: budgets }, { data: rows }] = await Promise.all([
+    supabase
+      .from("budgets")
+      .select("category, limit_amount, period_month, period_year")
+      .eq("user_id", user.id),
+    supabase
+      .from("expenses")
+      .select("category, amount")
+      .eq("user_id", user.id)
+      .gte("tx_date", start)
+      .lt("tx_date", next),
+  ]);
+
+  const totals: Record<string, number> = {};
+  (rows || []).forEach((r: { category?: string; amount: number | string }) => {
+    const key = r.category || "Other";
+    const amt = typeof r.amount === "number" ? r.amount : parseFloat(String(r.amount));
+    totals[key] = (totals[key] || 0) + (isNaN(amt) ? 0 : amt);
+  });
+
+  const alerts = computeBudgetAlerts((budgets || []) as BudgetRow[], totals, month, year);
+  if (!alerts || alerts.length === 0) return null;
 
   return (
     <div className="space-y-2">
