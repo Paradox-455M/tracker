@@ -1,6 +1,6 @@
 "use client";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { fetchJsonCached, invalidateCache } from "@/lib/clientCache";
+import { fetchJsonCached, invalidateCache, refetchNow } from "@/lib/clientCache";
 import toast from "react-hot-toast";
 import Button from "@/components/ui/Button";
 import Select from "@/components/ui/Select";
@@ -29,7 +29,7 @@ export default function BudgetsPage() {
     if (budgetsLoadingRef.current) return;
     budgetsLoadingRef.current = true;
     try {
-      const data = await fetchJsonCached<{ budgets: Budget[] }>("/api/budgets", { ttl: 10000 });
+      const data = await fetchJsonCached<{ budgets: Budget[] }>("/api/budgets", { ttl: 30000, swrTtl: 30000 });
       setBudgets(data.budgets || []);
     } finally {
       budgetsLoadingRef.current = false;
@@ -44,6 +44,7 @@ export default function BudgetsPage() {
     toast.success("Budget added");
     setForm({ ...form, category: "", amount: "" });
     invalidateCache("/api/budgets");
+    await refetchNow<{ budgets: Budget[] }>("/api/budgets");
     loadBudgets();
   }
 
@@ -53,6 +54,7 @@ export default function BudgetsPage() {
     if (!res.ok) return toast.error("Failed to update");
     toast.success("Budget updated");
     invalidateCache("/api/budgets");
+    await refetchNow<{ budgets: Budget[] }>("/api/budgets");
     loadBudgets();
   }
 
@@ -61,6 +63,7 @@ export default function BudgetsPage() {
     if (!res.ok) return toast.error("Failed to delete");
     toast.success("Budget deleted");
     invalidateCache("/api/budgets");
+    await refetchNow<{ budgets: Budget[] }>("/api/budgets");
     loadBudgets();
   }
 

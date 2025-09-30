@@ -68,7 +68,7 @@ export default function AIChatAssistant() {
   }
 
   return (
-    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }} className="rounded-2xl glass p-4 h-80 shadow-card flex flex-col">
+    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }} className="rounded-2xl glass p-4 shadow-card flex flex-col min-h-[70vh]">
       <div className="text-sm text-[var(--text-secondary)] mb-2">AI Assistant</div>
       <div ref={scrollerRef} className="flex-1 overflow-y-auto rounded-xl bg-white/5 border border-white/10 p-3 space-y-2">
         {messages.map((m) => (

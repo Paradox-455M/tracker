@@ -1,13 +1,14 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Wallet, PiggyBank, LineChart } from "lucide-react";
+import { LayoutDashboard, Wallet, PiggyBank, LineChart, Bot } from "lucide-react";
 
 const links = [
   { href: "/app", label: "Dashboard", icon: <LayoutDashboard size={16} /> },
   { href: "/app/expenses", label: "Expenses", icon: <Wallet size={16} /> },
   { href: "/app/budgets", label: "Budgets", icon: <PiggyBank size={16} /> },
   { href: "/app/insights", label: "Insights", icon: <LineChart size={16} /> },
+  { href: "/app/ai-advisor", label: "AI Advisor", icon: <Bot size={16} /> },
 ];
 
 export default function SidebarNav() {

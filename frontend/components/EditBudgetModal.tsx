@@ -7,6 +7,7 @@ import Input from "@/components/ui/Input";
 import Select from "@/components/ui/Select";
 import Button from "@/components/ui/Button";
 import { X } from "lucide-react";
+import { invalidateCache } from "@/lib/clientCache";
 
 const schema = z.object({
   category: z.string().min(2, "Category required"),
@@ -48,6 +49,8 @@ export default function EditBudgetModal({ budget, onClose, onUpdated }: { budget
       const res = await fetch(url, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
       if (!res.ok) throw new Error("Failed to save");
       toast.success(isCreate ? "Budget added" : "Budget updated");
+      // Bust budgets cache so lists and summaries refresh without page reload
+      invalidateCache("/api/budgets");
       onUpdated();
       onClose();
     } catch {

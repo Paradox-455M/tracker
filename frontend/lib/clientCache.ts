@@ -65,6 +65,17 @@ export function invalidateCache(urlOrKey: string) {
   store.delete(keyFrom(urlOrKey));
 }
 
+export async function refetchNow<T = unknown>(url: string, init?: RequestInit & { ttl?: number; cacheKey?: string; swrTtl?: number }): Promise<T> {
+  // Force an immediate fetch and update cache (bypassing any pending promise)
+  const cacheKey = init?.cacheKey || keyFrom(url, init);
+  const ttl = init?.ttl ?? 10_000;
+  const promise = doFetch<T>(url, init, ttl, cacheKey);
+  store.set(cacheKey, { expiresAt: Date.now() + ttl, promise });
+  const data = await promise;
+  store.set(cacheKey, { expiresAt: Date.now() + ttl, promise: null, data });
+  return data as T;
+}
+
 export function primeCache<T = unknown>(keyOrUrl: string, data: T, ttl = 10_000) {
   const cacheKey = keyOrUrl;
   store.set(cacheKey, { expiresAt: Date.now() + ttl, promise: null, data });

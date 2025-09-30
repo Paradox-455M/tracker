@@ -7,34 +7,41 @@ type CacheEntry = { expiresAt: number; payload: { summary: Record<string, number
 const TTL_MS = 60 * 60 * 1000; // 1 hour
 const memoryCache = new Map<string, CacheEntry>();
 
-export async function GET() {
+export async function GET(req: Request) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const cacheKey = `weekly:${user.id}`;
+  const { searchParams } = new URL(req.url);
+  const offsetParam = Number(searchParams.get("offset") || "0");
+  const weekOffset = isNaN(offsetParam) ? 0 : Math.max(0, Math.min(52, offsetParam));
+
+  const cacheKey = `weekly:${user.id}:offset:${weekOffset}`;
   const cached = memoryCache.get(cacheKey);
   if (cached && cached.expiresAt > Date.now()) {
     return NextResponse.json(cached.payload, { headers: { "Cache-Control": "private, max-age=3600" } });
   }
 
   const now = Date.now();
-  const start = new Date(now - 7 * 24 * 60 * 60 * 1000).toISOString();
-  const prevStart = new Date(now - 14 * 24 * 60 * 60 * 1000).toISOString();
-  const prevEnd = new Date(now - 7 * 24 * 60 * 60 * 1000).toISOString();
+  const msWeek = 7 * 24 * 60 * 60 * 1000;
+  const endThis = new Date(now - weekOffset * msWeek).toISOString();
+  const startThis = new Date(new Date(endThis).getTime() - msWeek).toISOString();
+  const endPrev = startThis;
+  const startPrev = new Date(new Date(endPrev).getTime() - msWeek).toISOString();
 
   const { data: current } = await supabase
     .from("expenses")
     .select("category, final_category, amount")
     .eq("user_id", user.id)
-    .gte("tx_date", start);
+    .gte("tx_date", startThis)
+    .lt("tx_date", endThis);
 
   const { data: previous } = await supabase
     .from("expenses")
     .select("category, final_category, amount")
     .eq("user_id", user.id)
-    .gte("tx_date", prevStart)
-    .lt("tx_date", prevEnd);
+    .gte("tx_date", startPrev)
+    .lt("tx_date", endPrev);
 
   const sum = (rows?: Array<{ category?: string | null; final_category?: string | null; amount: number | string }> | null) => {
     const tot: Record<string, number> = {};
@@ -49,7 +56,7 @@ export async function GET() {
 
   const summary = { current: sum(current), previous: sum(previous) };
 
-  const periodKey = new Date().toISOString().slice(0, 10); // yyyy-mm-dd
+  const periodKey = new Date(endThis).toISOString().slice(0, 10); // yyyy-mm-dd for period end
   const text = await generateWeeklyInsights(summary);
 
   if (text) {

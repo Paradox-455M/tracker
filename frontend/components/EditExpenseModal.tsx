@@ -7,6 +7,7 @@ import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
 import Select from "@/components/ui/Select";
 import { X } from "lucide-react";
+import { invalidateCache } from "@/lib/clientCache";
 
 const schema = z.object({
   amount: z.string().transform((v) => Number(v)).refine((n) => !isNaN(n) && n > 0, "Amount must be > 0"),
@@ -54,6 +55,8 @@ export default function EditExpenseModal({ expense, onClose, onUpdated }: { expe
       });
       if (!res.ok) throw new Error(isCreate ? "Failed to create" : "Failed to update");
       toast.success(isCreate ? "Expense added!" : "Expense updated!");
+      // Bust cached expense list so the table re-renders immediately
+      invalidateCache("/api/expenses");
       onUpdated();
       onClose();
     } catch {

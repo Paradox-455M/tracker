@@ -1,6 +1,6 @@
 "use client";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { fetchJsonCached, invalidateCache } from "@/lib/clientCache";
+import { fetchJsonCached, invalidateCache, refetchNow } from "@/lib/clientCache";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -50,7 +50,7 @@ export default function ExpensesPage() {
     loadingRef.current = true;
     setExpenses(null);
     try {
-      const data = await fetchJsonCached<{ expenses: Expense[] }>("/api/expenses", { ttl: 60000 });
+      const data = await fetchJsonCached<{ expenses: Expense[] }>("/api/expenses", { ttl: 30000, swrTtl: 30000 });
       setExpenses(data.expenses || []);
     } finally {
       loadingRef.current = false;
@@ -65,6 +65,7 @@ export default function ExpensesPage() {
       if (!res.ok) throw new Error("Delete failed");
       toast.success("Expense deleted!");
       invalidateCache("/api/expenses");
+      await refetchNow<{ expenses: Expense[] }>("/api/expenses");
       await loadExpenses();
     } catch {
       toast.error("Failed to delete expense");
