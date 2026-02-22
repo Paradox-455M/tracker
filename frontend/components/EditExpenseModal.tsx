@@ -8,6 +8,7 @@ import Button from "@/components/ui/Button";
 import Select from "@/components/ui/Select";
 import { X } from "lucide-react";
 import { invalidateCache } from "@/lib/clientCache";
+import { CATEGORIES } from "@/lib/categories";
 
 const schema = z.object({
   amount: z.string().transform((v) => Number(v)).refine((n) => !isNaN(n) && n > 0, "Amount must be > 0"),
@@ -89,17 +90,9 @@ export default function EditExpenseModal({ expense, onClose, onUpdated }: { expe
               <label className="block text-xs text-[var(--text-muted)] mb-1">Category</label>
               <Select {...register("category")}>
                 <option value="">Auto</option>
-                <option>Food & Dining</option>
-                <option>Groceries</option>
-                <option>Transportation</option>
-                <option>Shopping</option>
-                <option>Subscriptions</option>
-                <option>Utilities</option>
-                <option>Health</option>
-                <option>Entertainment</option>
-                <option>Travel</option>
-                <option>Rent</option>
-                <option>Other</option>
+                {CATEGORIES.map((cat) => (
+                  <option key={cat}>{cat}</option>
+                ))}
               </Select>
             </div>
             <div>

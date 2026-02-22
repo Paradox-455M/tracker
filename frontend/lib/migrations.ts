@@ -80,6 +80,27 @@ const migrations = [
       create policy "Alerts deletable by owner" on public.alerts for delete using (auth.uid() = user_id);
     `
   }
+  ,
+  {
+    id: "0006_gmail_integration",
+    sql: `
+      -- Store Gmail OAuth tokens and sync metadata per user
+      alter table public.users
+        add column if not exists gmail_tokens jsonb,
+        add column if not exists gmail_connected_at timestamptz,
+        add column if not exists gmail_last_synced_at timestamptz;
+
+      create index if not exists idx_users_gmail_connected_at on public.users(gmail_connected_at);
+
+      -- Dedupe Gmail-ingested expenses by message id per user
+      alter table public.expenses
+        add column if not exists gmail_message_id text;
+
+      create unique index if not exists uniq_expenses_user_gmail_msg
+        on public.expenses(user_id, gmail_message_id)
+        where gmail_message_id is not null;
+    `
+  }
 ];
 
 export async function runMigrations() {
@@ -124,15 +145,22 @@ export async function runMigrations() {
           .map(s => s.trim())
           .filter(s => s.length > 0);
 
+        const failed: string[] = [];
         for (const statement of statements) {
-          if (statement.trim()) {
-            try {
-              await supabase.rpc('exec_sql', { sql: statement.trim() + ';' });
-            } catch {
-              console.log(`Statement failed (this is often expected): ${statement.substring(0, 50)}...`);
-              // Swallow specific statement errors silently for idempotency
+          if (!statement.trim()) continue;
+          try {
+            await supabase.rpc('exec_sql', { sql: statement.trim() + ';' });
+          } catch (e: unknown) {
+            const msg = e instanceof Error ? e.message : String(e);
+            // "already exists" / "duplicate" errors are expected for idempotent migrations
+            if (!/(already exists|duplicate)/i.test(msg)) {
+              console.error(`[migration] Non-idempotent failure in ${migration.id}: ${msg}`);
+              failed.push(statement.substring(0, 80));
             }
           }
+        }
+        if (failed.length > 0) {
+          console.warn(`[migration] ${migration.id} had ${failed.length} non-idempotent failure(s)`);
         }
 
         // Mark migration as applied
@@ -145,11 +173,11 @@ export async function runMigrations() {
         }
 
         console.log(`Migration ${migration.id} applied successfully`);
-      } catch {
-        console.error(`Failed to apply migration ${migration.id}:`, Error);
+      } catch (err) {
+        console.error(`Failed to apply migration ${migration.id}:`, err);
       }
     }
-  } catch {
-    console.error('Migration system error:', Error);
+  } catch (err) {
+    console.error('Migration system error:', err);
   }
 }

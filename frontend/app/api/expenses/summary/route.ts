@@ -4,8 +4,16 @@ import { createClient } from "@/lib/supabase/server";
 // Simple in-memory TTL cache (per server instance)
 type CacheEntry = { expiresAt: number; payload: unknown };
 const CACHE_TTL_MS = 60_000; // 60s
+const MAX_CACHE_ENTRIES = 500;
 const memoryCache = new Map<string, CacheEntry>();
 const cacheKey = (userId: string, month1: number, year: number) => `${userId}:${year}:${month1}`;
+
+function setCacheWithEviction(cache: Map<string, CacheEntry>, key: string, value: CacheEntry) {
+  if (cache.size >= MAX_CACHE_ENTRIES) {
+    cache.delete(cache.keys().next().value!);
+  }
+  cache.set(key, value);
+}
 
 export async function GET(req: NextRequest) {
   const supabase = await createClient();
@@ -21,10 +29,11 @@ export async function GET(req: NextRequest) {
   const start = new Date(year, month, 1).toISOString();
   const next = new Date(year, month + 1, 1).toISOString();
 
-  // Serve from cache if fresh
+  // Serve from cache if fresh (skip if ?bust=1)
+  const bust = searchParams.get("bust") === "1";
   const key = cacheKey(user.id, month + 1, year);
   const cached = memoryCache.get(key);
-  if (cached && cached.expiresAt > Date.now()) {
+  if (!bust && cached && cached.expiresAt > Date.now()) {
     return NextResponse.json(cached.payload, {
       headers: { "Cache-Control": "private, max-age=60, stale-while-revalidate=30" },
     });
@@ -47,7 +56,7 @@ export async function GET(req: NextRequest) {
   });
 
   const payload = { totals, month: month + 1, year };
-  memoryCache.set(key, { expiresAt: Date.now() + CACHE_TTL_MS, payload });
+  setCacheWithEviction(memoryCache, key, { expiresAt: Date.now() + CACHE_TTL_MS, payload });
   return NextResponse.json(payload, {
     headers: { "Cache-Control": "private, max-age=60, stale-while-revalidate=30" },
   });

@@ -1,4 +1,5 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { CATEGORIES } from "@/lib/categories";
 
 const apiKey = process.env.GEMINI_API_KEY;
 let model: ReturnType<GoogleGenerativeAI["getGenerativeModel"]> | null = null;
@@ -63,7 +64,7 @@ Category:`;
     const result = await m.generateContent(prompt);
     const category = result.response.text().trim();
 
-    const validCategories = ["Food & Dining", "Travel", "Rent", "Shopping", "Subscriptions", "Utilities", "Health", "Groceries", "Entertainment", "Transportation", "Other"];
+    const validCategories: readonly string[] = CATEGORIES;
     if (validCategories.includes(category)) {
       return category;
     }

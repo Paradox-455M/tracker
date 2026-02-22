@@ -41,6 +41,25 @@ export default async function DashboardPage() {
   const chartData = Object.entries(totals).map(([name, value]) => ({ name, value }));
   // const colors = ["#82ca9d", "#8884d8", "#ffc658", "#ff7f50", "#6495ed", "#a78bfa", "#34d399"]; // kept for future legends
 
+  // Compute real 7-day daily totals from already-fetched rows
+  const last7 = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(Date.now() - (6 - i) * 86_400_000);
+    const dateStr = d.toISOString().slice(0, 10);
+    return (rows || [])
+      .filter((r: { tx_date: string }) => r.tx_date.slice(0, 10) === dateStr)
+      .reduce((s, r: { amount: number | string }) => s + (typeof r.amount === "number" ? r.amount : parseFloat(String(r.amount))), 0);
+  });
+
+  const topCategoryName = chartData.sort((a, b) => b.value - a.value)[0]?.name;
+  const topCatLast7 = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(Date.now() - (6 - i) * 86_400_000);
+    const dateStr = d.toISOString().slice(0, 10);
+    return (rows || [])
+      .filter((r: { tx_date: string; category?: string; final_category?: string }) =>
+        r.tx_date.slice(0, 10) === dateStr && (r.category || r.final_category) === topCategoryName)
+      .reduce((s, r: { amount: number | string }) => s + (typeof r.amount === "number" ? r.amount : parseFloat(String(r.amount))), 0);
+  });
+
   return (
     <div>
       <div className="flex items-center justify-between">
@@ -66,27 +85,22 @@ export default async function DashboardPage() {
           <div className="text-3xl font-bold mt-1">₹{(chartData.reduce((a, c) => a + c.value, 0)).toFixed(2)}</div>
           <DeferRender>
             <Suspense fallback={<div className="h-10 w-full animate-pulse rounded bg-white/5" />}>
-              <Sparkline data={[12,18,10,22,19,28,24]} />
+              <Sparkline data={last7} />
             </Suspense>
           </DeferRender>
           <div className="text-xs text-[var(--text-muted)] mt-1">Total spend</div>
         </DashboardCard>
         <DashboardCard title="Top category">
-          <div className="text-3xl font-bold mt-1">{chartData.sort((a,b)=>b.value-a.value)[0]?.name || "—"}</div>
+          <div className="text-3xl font-bold mt-1">{topCategoryName || "—"}</div>
           <DeferRender>
             <Suspense fallback={<div className="h-10 w-full animate-pulse rounded bg-white/5" />}>
-              <Sparkline data={[8,12,9,14,12,16,17]} color="#00FFC6" />
+              <Sparkline data={topCatLast7} color="#00FFC6" />
             </Suspense>
           </DeferRender>
           <div className="text-xs text-[var(--text-muted)] mt-1">Highest share</div>
         </DashboardCard>
         <DashboardCard title="Budgets">
-          <div className="text-3xl font-bold mt-1">2 nearing limit</div>
-          <DeferRender>
-            <Suspense fallback={<div className="h-10 w-full animate-pulse rounded bg-white/5" />}>
-              <Sparkline data={[5,7,6,9,10,12,14]} color="#FFB347" />
-            </Suspense>
-          </DeferRender>
+          <div className="text-3xl font-bold mt-1">See alerts →</div>
           <div className="text-xs text-[var(--text-muted)] mt-1">Set alerts to stay on track</div>
         </DashboardCard>
       </div>

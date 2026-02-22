@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { Toaster } from "react-hot-toast";
+import FloatingLogout from "@/components/FloatingLogout";
 
 export const metadata: Metadata = {
   title: "AI Money Coach",
@@ -17,6 +18,7 @@ export default function RootLayout({
       <body className={`antialiased`}>
         {children}
         <Toaster />
+        <FloatingLogout />
       </body>
     </html>
   );

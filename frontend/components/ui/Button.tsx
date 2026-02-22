@@ -3,7 +3,7 @@ import clsx from "clsx";
 import { ButtonHTMLAttributes } from "react";
 
 type Props = ButtonHTMLAttributes<HTMLButtonElement> & {
-  variant?: "primary" | "outline" | "ghost";
+  variant?: "primary" | "outline" | "ghost" | "secondary";
   size?: "sm" | "md" | "lg";
 };
 
@@ -18,6 +18,7 @@ export default function Button({ variant = "primary", size = "md", className, ..
     primary: "bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-black",
     outline: "border border-white/20 text-white hover:bg-white/5",
     ghost: "text-white hover:bg-white/5",
+    secondary: "bg-white/10 hover:bg-white/15 text-white",
   } as const;
   return <button className={clsx(base, sizes[size], variants[variant], className)} {...props} />;
 }

@@ -35,8 +35,8 @@ export async function POST(req: Request) {
   const body = await req.json();
   const { amount, description, category: incomingCategory, tx_date } = body || {};
 
-  if (!amount || isNaN(Number(amount))) {
-    return NextResponse.json({ error: "Invalid amount" }, { status: 400 });
+  if (!amount || isNaN(Number(amount)) || Number(amount) <= 0 || !isFinite(Number(amount))) {
+    return NextResponse.json({ error: "Amount must be a positive number" }, { status: 400 });
   }
 
   let finalCategory: string;
@@ -68,6 +68,9 @@ export async function POST(req: Request) {
     }
   }
 
+  const parsedDate = tx_date ? new Date(tx_date) : new Date();
+  if (isNaN(parsedDate.getTime())) return NextResponse.json({ error: "Invalid date" }, { status: 400 });
+
   const { data: inserted, error } = await supabase
     .from("expenses")
     .insert({
@@ -75,7 +78,7 @@ export async function POST(req: Request) {
       amount: Number(amount),
       description: description || null,
       category: finalCategory,
-      tx_date: tx_date ? new Date(tx_date).toISOString() : new Date().toISOString(),
+      tx_date: parsedDate.toISOString(),
     })
     .select()
     .single();
